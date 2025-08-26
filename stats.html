@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - TPS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i data-feather="bar-chart-2" class="me-2"></i>
+        Statistics & Analytics
+    </h2>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+        <i data-feather="arrow-left" class="me-1"></i>
+        Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <!-- Overview Stats -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="pie-chart" class="me-2"></i>
+                    Processing Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="h2 mb-1 text-primary">{{ total }}</div>
+                        <h6 class="text-muted mb-0">
+                            <i data-feather="file-text" class="me-1"></i>
+                            Total Entries
+                        </h6>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="h2 mb-1 text-success">{{ processed }}</div>
+                        <h6 class="text-muted mb-0">
+                            <i data-feather="check-circle" class="me-1"></i>
+                            Processed
+                        </h6>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="h2 mb-1 text-warning">{{ pending }}</div>
+                        <h6 class="text-muted mb-0">
+                            <i data-feather="clock" class="me-1"></i>
+                            Pending
+                        </h6>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="h2 mb-1 text-danger">{{ errors }}</div>
+                        <h6 class="text-muted mb-0">
+                            <i data-feather="alert-circle" class="me-1"></i>
+                            Errors
+                        </h6>
+                    </div>
+                </div>
+                
+                {% if total > 0 %}
+                <div class="progress mt-4" style="height: 12px;">
+                    {% set processed_pct = (processed / total * 100) | round(1) %}
+                    {% set pending_pct = (pending / total * 100) | round(1) %}
+                    {% set error_pct = (errors / total * 100) | round(1) %}
+                    
+                    <div class="progress-bar bg-success" 
+                         style="width: {{ processed_pct }}%"
+                         data-bs-toggle="tooltip" 
+                         title="{{ processed_pct }}% Processed">
+                    </div>
+                    <div class="progress-bar bg-warning" 
+                         style="width: {{ pending_pct }}%"
+                         data-bs-toggle="tooltip" 
+                         title="{{ pending_pct }}% Pending">
+                    </div>
+                    <div class="progress-bar bg-danger" 
+                         style="width: {{ error_pct }}%"
+                         data-bs-toggle="tooltip" 
+                         title="{{ error_pct }}% Errors">
+                    </div>
+                </div>
+                
+                <div class="row mt-3 text-center">
+                    <div class="col-4">
+                        <small class="text-success">{{ processed_pct }}% Complete</small>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-warning">{{ pending_pct }}% Pending</small>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-danger">{{ error_pct }}% Failed</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i data-feather="activity" class="me-2"></i>
+                    Recent Activity
+                </h5>
+                <a href="{{ url_for('browse') }}" class="btn btn-sm btn-outline-secondary">
+                    View All Entries
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_entries %}
+                    <div class="timeline">
+                        {% for entry in recent_entries[:10] %}
+                        <div class="timeline-item d-flex align-items-start mb-3">
+                            <div class="timeline-marker me-3">
+                                {% if entry.status == 'processed' %}
+                                    <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 32px; height: 32px;">
+                                        <i data-feather="check" class="text-white" style="width: 16px; height: 16px;"></i>
+                                    </div>
+                                {% elif entry.status == 'pending' %}
+                                    <div class="bg-warning rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 32px; height: 32px;">
+                                        <i data-feather="clock" class="text-white" style="width: 16px; height: 16px;"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="bg-danger rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 32px; height: 32px;">
+                                        <i data-feather="x" class="text-white" style="width: 16px; height: 16px;"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <a href="{{ url_for('view_entry', entry_id=entry.id) }}" 
+                                               class="text-decoration-none">
+                                                Entry #{{ entry.id }}
+                                            </a>
+                                        </h6>
+                                        <p class="mb-1 text-muted small">{{ entry.text_preview }}</p>
+                                        {% if entry.has_clean and entry.metadata_json %}
+                                            {% set metadata = entry.metadata_json | from_json %}
+                                            <small class="text-muted">
+                                                <i data-feather="file-text" class="me-1"></i>
+                                                {{ metadata.word_count }} words, {{ metadata.language_guess }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ entry.created_at[:19].replace('T', ' ') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i data-feather="inbox" class="text-muted mb-2" style="width: 32px; height: 32px;"></i>
+                        <p class="text-muted mb-0">No entries yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Stats -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="zap" class="me-2"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('entry') }}" class="btn btn-primary">
+                        <i data-feather="edit" class="me-2"></i>
+                        Add New Entry
+                    </a>
+                    {% if pending > 0 %}
+                    <a href="{{ url_for('process') }}" class="btn btn-warning">
+                        <i data-feather="refresh-cw" class="me-2"></i>
+                        Process {{ pending }} Pending
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">
+                        <i data-feather="search" class="me-2"></i>
+                        Search Entries
+                    </a>
+                    <a href="{{ url_for('browse') }}" class="btn btn-outline-secondary">
+                        <i data-feather="list" class="me-2"></i>
+                        Browse All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="database" class="me-2"></i>
+                    System Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-info">SQLite</div>
+                        <small class="text-muted">Database</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-info">FTS5</div>
+                        <small class="text-muted">Search Engine</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i data-feather="info" class="me-2"></i>
+                    <strong>Storage:</strong> All data is stored locally in your SQLite database with full-text search capabilities.
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Stats -->
+        {% if total > 0 %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="trending-up" class="me-2"></i>
+                    Processing Metrics
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <small>Success Rate</small>
+                        <small class="text-success">{{ ((processed / total) * 100) | round(1) }}%</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: {{ (processed / total * 100) | round(1) }}%"></div>
+                    </div>
+                </div>
+                
+                {% if pending > 0 %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <small>Pending Processing</small>
+                        <small class="text-warning">{{ ((pending / total) * 100) | round(1) }}%</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: {{ (pending / total * 100) | round(1) }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if errors > 0 %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <small>Error Rate</small>
+                        <small class="text-danger">{{ ((errors / total) * 100) | round(1) }}%</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-danger" style="width: {{ (errors / total * 100) | round(1) }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add a custom filter for from_json
+function from_json(value) {
+    try {
+        return JSON.parse(value);
+    } catch (e) {
+        return {};
+    }
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Auto-refresh if there are pending entries
+{% if pending > 0 %}
+setTimeout(function() {
+    location.reload();
+}, 60000); // Refresh every minute
+{% endif %}
+</script>
+{% endblock %}

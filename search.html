@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Search - TPS System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i data-feather="search" class="me-2"></i>
+                Search Entries
+            </h2>
+        </div>
+
+        <!-- Search Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="input-group input-group-lg">
+                        <input type="text" 
+                               class="form-control" 
+                               name="query" 
+                               value="{{ query }}"
+                               placeholder="Search cleaned text entries..." 
+                               required>
+                        <button class="btn btn-primary" type="submit">
+                            <i data-feather="search" class="me-1"></i>
+                            Search
+                        </button>
+                    </div>
+                    <div class="form-text mt-2">
+                        <i data-feather="info" class="me-1"></i>
+                        Supports full-text search with FTS5. Use quotes for exact phrases.
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        {% if query %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i data-feather="file-text" class="me-2"></i>
+                    Search Results
+                    {% if results %}
+                        <span class="badge bg-primary ms-2">{{ results|length }} found</span>
+                    {% endif %}
+                </h5>
+                {% if results %}
+                <small class="text-muted">Query: "{{ query }}"</small>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if results %}
+                    <div class="list-group list-group-flush">
+                        {% for result in results %}
+                            {% set metadata = result.metadata_json | from_json %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">
+                                                <a href="{{ url_for('view_entry', entry_id=result.raw_id) }}" 
+                                                   class="text-decoration-none">
+                                                    Entry #{{ result.raw_id }}
+                                                </a>
+                                                <small class="text-muted ms-2">(Clean ID: {{ result.id }})</small>
+                                            </h6>
+                                            <small class="text-muted">
+                                                {{ result.raw_created_at[:19].replace('T', ' ') }}
+                                            </small>
+                                        </div>
+                                        
+                                        <p class="mb-2">{{ result.clean_text_preview }}</p>
+                                        
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            {% if metadata.word_count %}
+                                            <span class="badge bg-secondary">
+                                                <i data-feather="file-text" class="me-1"></i>
+                                                {{ metadata.word_count }} words
+                                            </span>
+                                            {% endif %}
+                                            
+                                            {% if metadata.language_guess %}
+                                            <span class="badge bg-info">
+                                                <i data-feather="globe" class="me-1"></i>
+                                                {{ metadata.language_guess }}
+                                            </span>
+                                            {% endif %}
+                                            
+                                            {% if metadata.reading_time_minutes %}
+                                            <span class="badge bg-warning">
+                                                <i data-feather="clock" class="me-1"></i>
+                                                {{ metadata.reading_time_minutes }} min read
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {% if metadata.tags %}
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for tag in metadata.tags[:5] %}
+                                                <span class="badge bg-dark">#{{ tag }}</span>
+                                            {% endfor %}
+                                            {% if metadata.tags|length > 5 %}
+                                                <span class="badge bg-secondary">+{{ metadata.tags|length - 5 }} more</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i data-feather="search" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                        <h5 class="text-muted">No results found</h5>
+                        <p class="text-muted">
+                            No entries match your search query "{{ query }}".
+                            <br>Try different keywords or check your spelling.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <!-- Search Tips -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="help-circle" class="me-2"></i>
+                    Search Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Search</h6>
+                        <ul class="list-unstyled">
+                            <li><code>python</code> - Find entries containing "python"</li>
+                            <li><code>"exact phrase"</code> - Search for exact phrases</li>
+                            <li><code>word1 word2</code> - Find entries with both words</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Advanced Search</h6>
+                        <ul class="list-unstyled">
+                            <li><code>word1 OR word2</code> - Find entries with either word</li>
+                            <li><code>word1 NOT word2</code> - Exclude entries with word2</li>
+                            <li><code>word*</code> - Find words starting with "word"</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i data-feather="database" class="me-2"></i>
+                    <strong>Full-Text Search:</strong> Powered by SQLite FTS5 for fast, comprehensive text search across all cleaned entries.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add a custom filter for from_json
+function from_json(value) {
+    try {
+        return JSON.parse(value);
+    } catch (e) {
+        return {};
+    }
+}
+
+// Focus search input on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="query"]');
+    if (searchInput) {
+        searchInput.focus();
+    }
+});
+
+// Add search suggestions or recent searches functionality could go here
+</script>
+{% endblock %}

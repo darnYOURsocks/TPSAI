@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Add Text Entry - TPS System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i data-feather="edit" class="me-2"></i>
+                Add Text Entry
+            </h2>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i data-feather="arrow-left" class="me-1"></i>
+                Back to Dashboard
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="file-text" class="me-2"></i>
+                    Raw Text Input
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-4">
+                        <label for="text" class="form-label">
+                            <i data-feather="type" class="me-1"></i>
+                            Enter your text content
+                        </label>
+                        <textarea class="form-control" 
+                                  id="text" 
+                                  name="text" 
+                                  rows="12" 
+                                  placeholder="Type or paste your text here. This will be processed and cleaned by the TPS AI system..."
+                                  required></textarea>
+                        <div class="form-text">
+                            <i data-feather="info" class="me-1"></i>
+                            Your text will be normalized, analyzed, and made searchable through our AI processing pipeline.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="auto_process" 
+                                   name="auto_process" 
+                                   checked>
+                            <label class="form-check-label" for="auto_process">
+                                <i data-feather="zap" class="me-1"></i>
+                                Auto-process after adding
+                                <small class="text-muted d-block">
+                                    Automatically clean and index this text entry immediately
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="save" class="me-1"></i>
+                            Add Entry
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearForm()">
+                            <i data-feather="x" class="me-1"></i>
+                            Clear
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i data-feather="x-circle" class="me-1"></i>
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Processing Info -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="cpu" class="me-2"></i>
+                    What happens to your text?
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center">
+                            <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 48px; height: 48px;">
+                                <i data-feather="file-plus" class="text-white"></i>
+                            </div>
+                            <h6>1. Raw Storage</h6>
+                            <small class="text-muted">
+                                Your original text is stored exactly as entered
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center">
+                            <div class="bg-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 48px; height: 48px;">
+                                <i data-feather="refresh-cw" class="text-white"></i>
+                            </div>
+                            <h6>2. AI Processing</h6>
+                            <small class="text-muted">
+                                Text is normalized, analyzed, and enhanced with metadata
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-center">
+                            <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 48px; height: 48px;">
+                                <i data-feather="search" class="text-white"></i>
+                            </div>
+                            <h6>3. Searchable</h6>
+                            <small class="text-muted">
+                                Cleaned text becomes searchable with full-text search
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i data-feather="shield" class="me-2"></i>
+                    <strong>Privacy:</strong> Your text is processed locally and stored securely in your database.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Character count functionality
+function updateCharCount() {
+    const textarea = document.getElementById('text');
+    const text = textarea.value;
+    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const charCount = text.length;
+    
+    // Update or create character count display
+    let countDisplay = document.getElementById('char-count');
+    if (!countDisplay) {
+        countDisplay = document.createElement('small');
+        countDisplay.id = 'char-count';
+        countDisplay.className = 'text-muted float-end';
+        textarea.parentNode.querySelector('.form-text').appendChild(countDisplay);
+    }
+    
+    countDisplay.innerHTML = `<i data-feather="file-text" class="me-1"></i>${wordCount} words, ${charCount} characters`;
+    feather.replace();
+}
+
+// Add character count event listener
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('text');
+    textarea.addEventListener('input', updateCharCount);
+    textarea.addEventListener('paste', function() {
+        setTimeout(updateCharCount, 10);
+    });
+    
+    // Focus the textarea
+    textarea.focus();
+});
+
+// Clear form function
+function clearForm() {
+    document.getElementById('text').value = '';
+    updateCharCount();
+    document.getElementById('text').focus();
+}
+
+// Auto-save draft functionality (optional)
+function saveDraft() {
+    const text = document.getElementById('text').value;
+    if (text.trim()) {
+        localStorage.setItem('tps_draft', text);
+    }
+}
+
+function loadDraft() {
+    const draft = localStorage.getItem('tps_draft');
+    if (draft && !document.getElementById('text').value) {
+        if (confirm('Load saved draft?')) {
+            document.getElementById('text').value = draft;
+            updateCharCount();
+        }
+    }
+}
+
+// Auto-save every 30 seconds
+setInterval(saveDraft, 30000);
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', loadDraft);
+
+// Clear draft on successful submission
+document.querySelector('form').addEventListener('submit', function() {
+    localStorage.removeItem('tps_draft');
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter to submit
+    if (e.ctrlKey && e.key === 'Enter') {
+        document.querySelector('form').submit();
+    }
+    // Ctrl+K to clear
+    if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        clearForm();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Entries - TPS System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i data-feather="list" class="me-2"></i>
+        Browse Entries
+        {% if total %}
+            <span class="badge bg-secondary ms-2">{{ total }} total</span>
+        {% endif %}
+    </h2>
+    <div>
+        <a href="{{ url_for('entry') }}" class="btn btn-primary">
+            <i data-feather="plus" class="me-1"></i>
+            Add Text
+        </a>
+        <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">
+            <i data-feather="search" class="me-1"></i>
+            Search
+        </a>
+    </div>
+</div>
+
+{% if entries %}
+<!-- Pagination Top -->
+{% if total_pages > 1 %}
+<nav aria-label="Entry pagination" class="mb-4">
+    <ul class="pagination justify-content-center">
+        {% if has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('browse', page=page-1) }}">
+                    <i data-feather="chevron-left" class="me-1"></i>
+                    Previous
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    <i data-feather="chevron-left" class="me-1"></i>
+                    Previous
+                </span>
+            </li>
+        {% endif %}
+        
+        {% set start_page = [1, page - 2] | max %}
+        {% set end_page = [total_pages, page + 2] | min %}
+        
+        {% if start_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('browse', page=1) }}">1</a>
+            </li>
+            {% if start_page > 2 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+        {% endif %}
+        
+        {% for p in range(start_page, end_page + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('browse', page=p) }}">{{ p }}</a>
+            </li>
+        {% endfor %}
+        
+        {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('browse', page=total_pages) }}">{{ total_pages }}</a>
+            </li>
+        {% endif %}
+        
+        {% if has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('browse', page=page+1) }}">
+                    Next
+                    <i data-feather="chevron-right" class="ms-1"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Next
+                    <i data-feather="chevron-right" class="ms-1"></i>
+                </span>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Entries List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i data-feather="file-text" class="me-2"></i>
+            All Entries
+        </h5>
+        <small class="text-muted">
+            Page {{ page }} of {{ total_pages if total_pages > 0 else 1 }}
+        </small>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for entry in entries %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">
+                                <a href="{{ url_for('view_entry', entry_id=entry.id) }}" 
+                                   class="text-decoration-none">
+                                    Entry #{{ entry.id }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                {{ entry.created_at[:19].replace('T', ' ') }}
+                            </small>
+                        </div>
+                        
+                        <p class="mb-2 text-muted">{{ entry.text_preview }}</p>
+                        
+                        {% if entry.has_clean and entry.metadata_json %}
+                            {% set metadata = entry.metadata_json | from_json %}
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                {% if metadata.word_count %}
+                                <span class="badge bg-secondary">
+                                    <i data-feather="file-text" class="me-1"></i>
+                                    {{ metadata.word_count }} words
+                                </span>
+                                {% endif %}
+                                
+                                {% if metadata.language_guess %}
+                                <span class="badge bg-info">
+                                    <i data-feather="globe" class="me-1"></i>
+                                    {{ metadata.language_guess }}
+                                </span>
+                                {% endif %}
+                                
+                                {% if metadata.reading_time_minutes %}
+                                <span class="badge bg-warning">
+                                    <i data-feather="clock" class="me-1"></i>
+                                    {{ metadata.reading_time_minutes }} min read
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if metadata.tags %}
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for tag in metadata.tags[:3] %}
+                                    <span class="badge bg-dark">#{{ tag }}</span>
+                                {% endfor %}
+                                {% if metadata.tags|length > 3 %}
+                                    <span class="badge bg-secondary">+{{ metadata.tags|length - 3 }} more</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="ms-3 text-end">
+                        {% if entry.status == 'processed' %}
+                            <span class="badge bg-success mb-2 d-block">
+                                <i data-feather="check" class="me-1"></i>
+                                Processed
+                            </span>
+                        {% elif entry.status == 'pending' %}
+                            <span class="badge bg-warning mb-2 d-block">
+                                <i data-feather="clock" class="me-1"></i>
+                                Pending
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger mb-2 d-block">
+                                <i data-feather="x" class="me-1"></i>
+                                Error
+                            </span>
+                        {% endif %}
+                        
+                        {% if entry.has_clean %}
+                            <small class="text-muted d-block">
+                                <i data-feather="layers" class="me-1"></i>
+                                Clean #{{ entry.clean_id }}
+                            </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Pagination Bottom -->
+{% if total_pages > 1 %}
+<nav aria-label="Entry pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('browse', page=page-1) }}">
+                    <i data-feather="chevron-left" class="me-1"></i>
+                    Previous
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    <i data-feather="chevron-left" class="me-1"></i>
+                    Previous
+                </span>
+            </li>
+        {% endif %}
+        
+        {% for p in range(start_page, end_page + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('browse', page=p) }}">{{ p }}</a>
+            </li>
+        {% endfor %}
+        
+        {% if has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('browse', page=page+1) }}">
+                    Next
+                    <i data-feather="chevron-right" class="ms-1"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Next
+                    <i data-feather="chevron-right" class="ms-1"></i>
+                </span>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i data-feather="inbox" class="text-muted mb-3" style="width: 64px; height: 64px;"></i>
+        <h4 class="text-muted">No entries found</h4>
+        <p class="text-muted">
+            You haven't added any text entries yet.
+            <br>Start by creating your first entry.
+        </p>
+        <a href="{{ url_for('entry') }}" class="btn btn-primary">
+            <i data-feather="plus" class="me-1"></i>
+            Add Your First Entry
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add a custom filter for from_json
+function from_json(value) {
+    try {
+        return JSON.parse(value);
+    } catch (e) {
+        return {};
+    }
+}
+
+// Add keyboard navigation for pagination
+document.addEventListener('keydown', function(e) {
+    {% if has_prev and e.key == 'ArrowLeft' %}
+        if (e.key === 'ArrowLeft' && e.ctrlKey) {
+            window.location.href = "{{ url_for('browse', page=page-1) }}";
+        }
+    {% endif %}
+    {% if has_next %}
+        if (e.key === 'ArrowRight' && e.ctrlKey) {
+            window.location.href = "{{ url_for('browse', page=page+1) }}";
+        }
+    {% endif %}
+});
+</script>
+{% endblock %}
